@@ -1,18 +1,17 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
+import Sidebar from '@/components/Sidebar';
+import GenerationTab from '@/components/GenerationTab';
+import PromptsTab from '@/components/PromptsTab';
+import ActualizationTab from '@/components/ActualizationTab';
 
 interface FieldType {
   id: string;
@@ -165,279 +164,26 @@ const Index = () => {
     toast.success(`Сгенерировано ${selectedFields.size} полей`);
   };
 
-  const groupedFields = fieldTypes.reduce((acc, field) => {
-    if (!acc[field.category]) {
-      acc[field.category] = [];
-    }
-    acc[field.category].push(field);
-    return acc;
-  }, {} as Record<string, FieldType[]>);
-
   return (
     <div className="min-h-screen bg-background">
       <div className="flex h-screen">
-        <aside className="w-64 border-r border-border bg-card">
-          <div className="p-6 border-b border-border">
-            <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-              <Icon name="Sparkles" size={24} />
-              SEO Генератор
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">OpenCart 3 / RU</p>
-          </div>
-          
-          <nav className="p-3">
-            <Button
-              variant={activeTab === 'generation' ? 'default' : 'ghost'}
-              className="w-full justify-start mb-1"
-              onClick={() => setActiveTab('generation')}
-            >
-              <Icon name="Wand2" size={18} className="mr-2" />
-              Генерация
-            </Button>
-            
-            <Button
-              variant={activeTab === 'prompts' ? 'default' : 'ghost'}
-              className="w-full justify-start mb-1"
-              onClick={() => setActiveTab('prompts')}
-            >
-              <Icon name="FileText" size={18} className="mr-2" />
-              Промпты
-            </Button>
-            
-            <Button
-              variant={activeTab === 'media' ? 'default' : 'ghost'}
-              className="w-full justify-start mb-1"
-              onClick={() => setActiveTab('media')}
-            >
-              <Icon name="Image" size={18} className="mr-2" />
-              Медиа
-            </Button>
-            
-            <Button
-              variant={activeTab === 'history' ? 'default' : 'ghost'}
-              className="w-full justify-start mb-1"
-              onClick={() => setActiveTab('history')}
-            >
-              <Icon name="History" size={18} className="mr-2" />
-              История
-            </Button>
-            
-            <Separator className="my-3" />
-            
-            <Button
-              variant={activeTab === 'actualization' ? 'default' : 'ghost'}
-              className="w-full justify-start mb-1"
-              onClick={() => setActiveTab('actualization')}
-            >
-              <Icon name="RefreshCw" size={18} className="mr-2" />
-              Актуализация
-            </Button>
-            
-            <Button
-              variant={activeTab === 'settings' ? 'default' : 'ghost'}
-              className="w-full justify-start mb-1"
-              onClick={() => setActiveTab('settings')}
-            >
-              <Icon name="Settings" size={18} className="mr-2" />
-              Настройки
-            </Button>
-          </nav>
-        </aside>
+        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
         <main className="flex-1 overflow-hidden">
           {activeTab === 'generation' && (
-            <div className="h-full flex flex-col">
-              <div className="border-b border-border p-6">
-                <h2 className="text-2xl font-semibold mb-4">Генерация SEO-контента</h2>
-                
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="topic">Тема генерации</Label>
-                    <Input
-                      id="topic"
-                      placeholder="Например: Беспроводные наушники Sony WH-1000XM5"
-                      value={generationTopic}
-                      onChange={(e) => setGenerationTopic(e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="mb-2 block">Выберите поля для генерации</Label>
-                    <ScrollArea className="h-48 rounded-md border border-border p-4">
-                      {Object.entries(groupedFields).map(([category, fields]) => (
-                        <div key={category} className="mb-4 last:mb-0">
-                          <p className="text-sm font-medium text-muted-foreground mb-2">{category}</p>
-                          <div className="space-y-2">
-                            {fields.map((field) => (
-                              <div key={field.id} className="flex items-center justify-between">
-                                <div className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={field.id}
-                                    checked={selectedFields.has(field.id)}
-                                    onCheckedChange={() => toggleField(field.id)}
-                                  />
-                                  <label
-                                    htmlFor={field.id}
-                                    className="text-sm cursor-pointer hover:text-foreground transition-colors"
-                                  >
-                                    {field.label}
-                                  </label>
-                                </div>
-                                <Badge variant="outline" className="text-xs">
-                                  {field.charLimit} симв.
-                                </Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </ScrollArea>
-                  </div>
-
-                  <Button onClick={handleGenerate} className="w-full" size="lg">
-                    <Icon name="Sparkles" size={18} className="mr-2" />
-                    Сгенерировать
-                  </Button>
-                </div>
-              </div>
-
-              <ScrollArea className="flex-1 p-6">
-                {Object.keys(generationResults).length === 0 ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center text-muted-foreground">
-                      <Icon name="FileText" size={48} className="mx-auto mb-4 opacity-50" />
-                      <p>Результаты генерации появятся здесь</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4 max-w-4xl">
-                    {Array.from(selectedFields).map((fieldId) => {
-                      const field = fieldTypes.find(f => f.id === fieldId);
-                      const result = generationResults[fieldId];
-                      
-                      if (!field || !result) return null;
-                      
-                      const charCount = result.length;
-                      const isOverLimit = charCount > field.charLimit;
-                      
-                      return (
-                        <Card key={fieldId} className="p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-semibold">{field.label}</h3>
-                            <Badge variant={isOverLimit ? 'destructive' : 'default'}>
-                              {charCount} / {field.charLimit}
-                            </Badge>
-                          </div>
-                          
-                          <Textarea
-                            value={result}
-                            readOnly
-                            className="min-h-[100px] font-mono text-sm"
-                          />
-                          
-                          <div className="flex gap-2 mt-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                navigator.clipboard.writeText(result);
-                                toast.success('Скопировано в буфер обмена');
-                              }}
-                            >
-                              <Icon name="Copy" size={14} className="mr-1" />
-                              Копировать
-                            </Button>
-                            <Button size="sm" variant="outline">
-                              <Icon name="RefreshCw" size={14} className="mr-1" />
-                              Регенерировать
-                            </Button>
-                          </div>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-              </ScrollArea>
-            </div>
+            <GenerationTab
+              generationTopic={generationTopic}
+              setGenerationTopic={setGenerationTopic}
+              fieldTypes={fieldTypes}
+              selectedFields={selectedFields}
+              toggleField={toggleField}
+              generationResults={generationResults}
+              handleGenerate={handleGenerate}
+            />
           )}
 
           {activeTab === 'prompts' && (
-            <div className="h-full flex flex-col">
-              <div className="border-b border-border p-6">
-                <h2 className="text-2xl font-semibold mb-2">Управление промптами</h2>
-                <p className="text-muted-foreground text-sm">
-                  Настройте шаблоны генерации для каждого типа поля OpenCart
-                </p>
-              </div>
-
-              <ScrollArea className="flex-1 p-6">
-                <div className="space-y-4 max-w-4xl">
-                  {prompts.map((prompt) => (
-                    <Card key={prompt.id} className="p-5">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-semibold">{prompt.fieldType}</h3>
-                        <Badge variant="secondary">ID: {prompt.id}</Badge>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-1">Шаблон промпта</Label>
-                          <Textarea
-                            value={prompt.template}
-                            readOnly
-                            className="min-h-[120px] text-sm"
-                          />
-                        </div>
-
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <Label className="text-xs text-muted-foreground">
-                              Баланс: AI vs Переменные
-                            </Label>
-                            <span className="text-sm font-medium">{prompt.aiBalance}% AI</span>
-                          </div>
-                          <Progress value={prompt.aiBalance} className="h-2" />
-                          <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                            <span>Строгие переменные</span>
-                            <span>Свободный AI</span>
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label className="text-xs text-muted-foreground mb-2 block">
-                            Доступные переменные
-                          </Label>
-                          <div className="flex flex-wrap gap-2">
-                            {prompt.variables.map((variable) => (
-                              <Badge key={variable} variant="outline" className="font-mono text-xs">
-                                {variable}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2 pt-2">
-                          <Button size="sm" variant="outline">
-                            <Icon name="Edit" size={14} className="mr-1" />
-                            Редактировать
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            <Icon name="TestTube" size={14} className="mr-1" />
-                            Тестировать
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-
-                  <Button variant="outline" className="w-full">
-                    <Icon name="Plus" size={16} className="mr-2" />
-                    Добавить новый промпт
-                  </Button>
-                </div>
-              </ScrollArea>
-            </div>
+            <PromptsTab prompts={prompts} />
           )}
 
           {activeTab === 'media' && (
@@ -586,113 +332,7 @@ const Index = () => {
           )}
 
           {activeTab === 'actualization' && (
-            <div className="h-full flex flex-col">
-              <div className="border-b border-border p-6">
-                <h2 className="text-2xl font-semibold mb-2">Актуализация SEO-знаний</h2>
-                <p className="text-muted-foreground text-sm">
-                  Автоматическое обновление алгоритмов на основе актуальных источников
-                </p>
-              </div>
-
-              <ScrollArea className="flex-1 p-6">
-                <div className="max-w-4xl space-y-6">
-                  <Card className="p-5 bg-accent/10 border-accent">
-                    <div className="flex items-center gap-3">
-                      <div className="p-3 rounded-full bg-accent/20">
-                        <Icon name="Clock" size={24} className="text-accent" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold">Расписание проверки</h3>
-                        <p className="text-sm text-muted-foreground">Каждую среду в 03:00 МСК</p>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        <Icon name="Settings" size={14} className="mr-1" />
-                        Изменить
-                      </Button>
-                    </div>
-                  </Card>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-semibold">Источники знаний ({sources.length})</h3>
-                      <Button variant="outline" size="sm">
-                        <Icon name="Plus" size={14} className="mr-1" />
-                        Добавить источник
-                      </Button>
-                    </div>
-
-                    <div className="space-y-3">
-                      {sources.map((source) => (
-                        <Card key={source.id} className="p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-medium">{source.name}</h4>
-                                <Badge
-                                  variant={
-                                    source.status === 'active'
-                                      ? 'default'
-                                      : source.status === 'pending'
-                                      ? 'secondary'
-                                      : 'destructive'
-                                  }
-                                  className="text-xs"
-                                >
-                                  {source.status === 'active' && 'Активен'}
-                                  {source.status === 'pending' && 'Ожидание'}
-                                  {source.status === 'error' && 'Ошибка'}
-                                </Badge>
-                              </div>
-                              
-                              <p className="text-sm text-muted-foreground mb-2">{source.url}</p>
-                              
-                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                  <Icon name="Tag" size={12} />
-                                  {source.category}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Icon name="Clock" size={12} />
-                                  {source.lastCheck}
-                                </span>
-                              </div>
-                            </div>
-
-                            <Button variant="ghost" size="sm">
-                              <Icon name="RefreshCw" size={14} />
-                            </Button>
-                          </div>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-
-                  <Card className="p-5">
-                    <h3 className="font-semibold mb-3 flex items-center gap-2">
-                      <Icon name="TrendingUp" size={18} />
-                      Последние обновления алгоритма
-                    </h3>
-                    <div className="space-y-3 text-sm">
-                      <div className="flex gap-3 pb-3 border-b border-border last:border-0">
-                        <div className="text-muted-foreground whitespace-nowrap">5 дней назад</div>
-                        <div>
-                          <p className="font-medium mb-1">Обновлены лимиты Title для Яндекса</p>
-                          <p className="text-muted-foreground">Источник: Яндекс.Вебмастер — оптимальная длина увеличена до 65 символов</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-3 pb-3 border-b border-border last:border-0">
-                        <div className="text-muted-foreground whitespace-nowrap">12 дней назад</div>
-                        <div>
-                          <p className="font-medium mb-1">Новые рекомендации по структуре описаний</p>
-                          <p className="text-muted-foreground">Источник: VC.ru/SEO — акцент на маркированные списки и подзаголовки</p>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                </div>
-              </ScrollArea>
-            </div>
+            <ActualizationTab sources={sources} />
           )}
 
           {activeTab === 'settings' && (
@@ -798,8 +438,6 @@ const Index = () => {
                         </div>
                         <Switch defaultChecked />
                       </div>
-
-                      <Separator />
 
                       <div className="flex items-center justify-between">
                         <div>
