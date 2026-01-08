@@ -51,6 +51,7 @@ const Index = () => {
     { id: 'product_desc', label: 'Описание товара', category: 'Описания', charLimit: 1500, enabled: false },
     { id: 'category_desc', label: 'Описание категории', category: 'Описания', charLimit: 1200, enabled: false },
     { id: 'short_desc', label: 'Краткое описание', category: 'Описания', charLimit: 300, enabled: false },
+    { id: 'brand_desc', label: 'Описание бренда', category: 'Описания', charLimit: 800, enabled: false },
     { id: 'blog_post', label: 'Статья блога', category: 'Контент', charLimit: 5000, enabled: false },
     { id: 'news', label: 'Новость', category: 'Контент', charLimit: 800, enabled: false },
     { id: 'tags', label: 'Теги', category: 'Структура', charLimit: 100, enabled: false },
@@ -219,6 +220,9 @@ const Index = () => {
             break;
           case 'short_desc':
             results[fieldId] = `${generationTopic} в наличии. Доставка по России. Гарантия качества. Низкие цены!`;
+            break;
+          case 'brand_desc':
+            results[fieldId] = `О бренде ${generationTopic}\n\nМы — надёжный производитель с многолетним опытом на рынке. Наша миссия — предоставлять качественные товары по доступным ценам.\n\nНаши преимущества:\n• Собственное производство\n• Контроль качества на всех этапах\n• Гарантия на всю продукцию\n• Профессиональная поддержка клиентов\n\nМы постоянно совершенствуем наши товары, используя современные технологии и прислушиваясь к отзывам покупателей. Выбирая нас, вы выбираете надёжность и качество!`;
             break;
           case 'blog_post':
             results[fieldId] = context
