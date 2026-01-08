@@ -7,7 +7,6 @@ export interface Version {
   data: {
     activeTab: string;
     generationTopic: string;
-    brandDescription: string;
     productUrl: string;
     extractedData: string;
     generationResults: Record<string, string>;

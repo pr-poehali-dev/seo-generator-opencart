@@ -32,8 +32,6 @@ interface GenerationTabProps {
   handleAnalyzeUrl: () => void;
   isAnalyzing: boolean;
   extractedData: string;
-  brandDescription: string;
-  setBrandDescription: (desc: string) => void;
 }
 
 const GenerationTab = ({
@@ -48,9 +46,7 @@ const GenerationTab = ({
   handleGenerate,
   handleAnalyzeUrl,
   isAnalyzing,
-  extractedData,
-  brandDescription,
-  setBrandDescription
+  extractedData
 }: GenerationTabProps) => {
   const groupedFields = fieldTypes.reduce((acc, field) => {
     if (!acc[field.category]) {
@@ -83,20 +79,6 @@ const GenerationTab = ({
               />
               <p className="text-xs text-muted-foreground mt-1">
                 Введите название товара или категории вручную
-              </p>
-            </div>
-            
-            <div>
-              <Label htmlFor="brand-desc">Описание бренда (опционально)</Label>
-              <Textarea
-                id="brand-desc"
-                placeholder="Например: Sony — японская компания, лидер в производстве аудиотехники премиум-класса"
-                value={brandDescription}
-                onChange={(e) => setBrandDescription(e.target.value)}
-                className="mt-1 min-h-[80px]"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Информация о бренде улучшит качество генерируемого контента
               </p>
             </div>
           </TabsContent>
@@ -132,20 +114,6 @@ const GenerationTab = ({
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Приложение извлечёт тексты, характеристики и информацию из изображений
-              </p>
-            </div>
-            
-            <div>
-              <Label htmlFor="brand-desc-url">Описание бренда (опционально)</Label>
-              <Textarea
-                id="brand-desc-url"
-                placeholder="Например: Sony — японская компания, лидер в производстве аудиотехники премиум-класса"
-                value={brandDescription}
-                onChange={(e) => setBrandDescription(e.target.value)}
-                className="mt-1 min-h-[80px]"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Информация о бренде улучшит качество генерируемого контента
               </p>
             </div>
             
@@ -217,27 +185,40 @@ const GenerationTab = ({
           <div className="flex items-center justify-center h-full">
             <div className="text-center text-muted-foreground">
               <Icon name="FileText" size={48} className="mx-auto mb-4 opacity-50" />
-              <p>Результаты генерации появятся здесь</p>
+              <p className="text-lg font-medium mb-2">Здесь появятся результаты</p>
+              <p className="text-sm">
+                Введите тему и выберите поля для генерации SEO-контента
+              </p>
             </div>
           </div>
         ) : (
-          <div className="space-y-4 max-w-4xl">
-            {Array.from(selectedFields).map((fieldId) => {
+          <div className="space-y-6">
+            {Array.from(selectedFields).map(fieldId => {
               const field = fieldTypes.find(f => f.id === fieldId);
               const result = generationResults[fieldId];
               
               if (!field || !result) return null;
               
-              const charCount = result.length;
-              const isOverLimit = charCount > field.charLimit;
-              
               return (
-                <Card key={fieldId} className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold">{field.label}</h3>
-                    <Badge variant={isOverLimit ? 'destructive' : 'default'}>
-                      {charCount} / {field.charLimit}
-                    </Badge>
+                <Card key={fieldId} className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold">{field.label}</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {result.length} / {field.charLimit} символов
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(result);
+                        toast.success('Скопировано в буфер обмена');
+                      }}
+                    >
+                      <Icon name="Copy" size={16} className="mr-2" />
+                      Копировать
+                    </Button>
                   </div>
                   
                   <Textarea
@@ -245,24 +226,6 @@ const GenerationTab = ({
                     readOnly
                     className="min-h-[100px] font-mono text-sm"
                   />
-                  
-                  <div className="flex gap-2 mt-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        navigator.clipboard.writeText(result);
-                        toast.success('Скопировано в буфер обмена');
-                      }}
-                    >
-                      <Icon name="Copy" size={14} className="mr-1" />
-                      Копировать
-                    </Button>
-                    <Button size="sm" variant="outline">
-                      <Icon name="RefreshCw" size={14} className="mr-1" />
-                      Регенерировать
-                    </Button>
-                  </div>
                 </Card>
               );
             })}

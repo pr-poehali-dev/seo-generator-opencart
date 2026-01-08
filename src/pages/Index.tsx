@@ -38,7 +38,6 @@ interface Source {
 const Index = () => {
   const [activeTab, setActiveTab] = useState('generation');
   const [generationTopic, setGenerationTopic] = useState('');
-  const [brandDescription, setBrandDescription] = useState('');
   const [productUrl, setProductUrl] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [extractedData, setExtractedData] = useState('');
@@ -119,7 +118,6 @@ const Index = () => {
   const handleLoadVersion = (version: Version) => {
     setActiveTab(version.data.activeTab);
     setGenerationTopic(version.data.generationTopic);
-    setBrandDescription(version.data.brandDescription || '');
     setProductUrl(version.data.productUrl);
     setExtractedData(version.data.extractedData);
     setGenerationResults(version.data.generationResults);
@@ -131,7 +129,6 @@ const Index = () => {
     return {
       activeTab,
       generationTopic,
-      brandDescription,
       productUrl,
       extractedData,
       generationResults,
@@ -181,7 +178,6 @@ const Index = () => {
 
   const handleGenerate = () => {
     const topic = generationTopic.trim();
-    const brand = brandDescription.trim();
     const context = extractedData || '';
     
     if (!topic) {
@@ -195,7 +191,6 @@ const Index = () => {
     }
 
     const results: Record<string, string> = {};
-    const brandContext = brand ? `\n\nО бренде: ${brand}` : '';
     
     selectedFields.forEach(fieldId => {
       const field = fieldTypes.find(f => f.id === fieldId);
@@ -208,101 +203,95 @@ const Index = () => {
             results[fieldId] = `${generationTopic} | Каталог, цены, отзывы | Интернет-магазин`;
             break;
           case 'description':
-            results[fieldId] = brand 
-              ? `${generationTopic} ${brand.split('.')[0]}. В наличии, доставка по России, гарантия качества. Закажите онлайн!`
-              : `${generationTopic} в наличии. Широкий выбор, доставка по России, гарантия качества. Сравните цены и характеристики. Закажите онлайн!`;
+            results[fieldId] = `${generationTopic} в наличии. Широкий ассортимент, доставка по России, гарантия качества. Заказывайте онлайн с выгодой!`;
             break;
           case 'keywords':
-            results[fieldId] = `${generationTopic.toLowerCase()}, купить ${generationTopic.toLowerCase()}, ${generationTopic.toLowerCase()} цена, ${generationTopic.toLowerCase()} заказать`;
+            const keywords = generationTopic.toLowerCase().split(' ');
+            results[fieldId] = `${keywords.join(', ')}, купить, цена, отзывы, доставка, интернет-магазин`;
             break;
           case 'product_desc':
-            if (context) {
-              results[fieldId] = `Представляем ${generationTopic} — товар на основе реальных данных.\n\n${context.slice(0, 800)}${brandContext}\n\nДанное описание сгенерировано на основе актуальной информации с сайта поставщика.`;
-            } else {
-              const brandIntro = brand ? `${brand.split('.')[0]}. ` : '';
-              results[fieldId] = `Представляем ${generationTopic} — продукт, который сочетает в себе высокое качество и современные технологии. ${brandIntro}Этот товар идеально подходит для тех, кто ценит надёжность и функциональность.\n\nОсновные характеристики:\n• Высокое качество изготовления\n• Современный дизайн\n• Оптимальное соотношение цены и качества\n• Гарантия производителя\n\nПреимущества:\nНаш ${generationTopic} отличается долговечностью и удобством использования. Продукт прошёл все необходимые проверки качества и полностью соответствует российским стандартам.${brandContext}\n\nПрименение:\nИдеально подходит для повседневного использования. Простота эксплуатации и надёжность делают этот товар отличным выбором для любого покупателя.`;
-            }
+            results[fieldId] = context 
+              ? `${generationTopic}\n\n${context.substring(0, 800)}\n\nМы предлагаем широкий выбор товаров с гарантией качества и быстрой доставкой по всей России. Закажите ${generationTopic.toLowerCase()} прямо сейчас и получите профессиональную консультацию наших специалистов.`
+              : `${generationTopic}\n\nПредставляем вашему вниманию ${generationTopic.toLowerCase()}. Этот товар отличается высоким качеством и надёжностью. Идеально подходит для повседневного использования.\n\nОсновные преимущества:\n• Высокое качество материалов\n• Современный дизайн\n• Длительный срок службы\n• Доступная цена\n\nМы предлагаем быструю доставку по всей России и гарантию на все товары. Закажите ${generationTopic.toLowerCase()} прямо сейчас!`;
             break;
           case 'category_desc':
-            results[fieldId] = `В категории ${generationTopic} представлен широкий ассортимент качественных товаров от проверенных производителей. Мы тщательно отбираем каждый продукт, чтобы предложить вам лучшее соотношение цены и качества.${brandContext}\n\nВ нашем каталоге вы найдёте товары на любой вкус и бюджет. Все позиции имеют подробные описания, фотографии и реальные отзывы покупателей. Оформите заказ онлайн с доставкой по всей России!`;
+            results[fieldId] = `Каталог товаров категории ${generationTopic}. Большой выбор качественных товаров с доставкой по России. Низкие цены, гарантия качества, профессиональные консультации. Закажите онлайн или по телефону!`;
             break;
           case 'short_desc':
-            results[fieldId] = brand
-              ? `${generationTopic} ${brand.split('.')[0]}. В наличии, быстрая доставка, гарантия.`
-              : `${generationTopic} высокого качества. В наличии, быстрая доставка, гарантия. Широкий выбор моделей по выгодным ценам.`;
+            results[fieldId] = `${generationTopic} в наличии. Доставка по России. Гарантия качества. Низкие цены!`;
             break;
           case 'blog_post':
-            const brandSection = brand ? `\n\n## О бренде\n\n${brand}` : '';
-            results[fieldId] = `# Всё, что нужно знать о ${generationTopic}\n\nВыбор правильного товара — важное решение. В этой статье мы расскажем, на что обратить внимание при покупке и как выбрать оптимальный вариант.${brandSection}\n\n## Основные критерии выбора\n\n1. Качество изготовления\n2. Функциональные характеристики\n3. Цена и гарантийные условия\n4. Отзывы других покупателей\n\n## Актуальные тренды 2026 года\n\nСовременный рынок предлагает широкий выбор решений. Покупатели все чаще обращают внимание на экологичность, надёжность и технологичность продуктов.\n\n## Как выбрать ${generationTopic}\n\nПри выборе рекомендуем учитывать ваши конкретные потребности и бюджет. Наши эксперты всегда готовы помочь с подбором оптимального варианта.\n\n## Заключение\n\nПравильный выбор ${generationTopic} обеспечит вам комфорт и удовлетворение от покупки. Заказывайте в нашем магазине — гарантируем качество и выгодные цены!`;
+            results[fieldId] = context
+              ? `# Всё о ${generationTopic}\n\n${context.substring(0, 2000)}\n\n## Почему стоит выбрать именно этот товар?\n\nЭтот товар пользуется большой популярностью благодаря своим характеристикам и надёжности. Подходит как для профессионального, так и для домашнего использования.\n\n## Как сделать заказ?\n\nОформить заказ очень просто — добавьте товар в корзину и следуйте инструкциям. Доставка осуществляется по всей России!`
+              : `# ${generationTopic}: полное руководство\n\nВ этой статье мы расскажем всё, что нужно знать о ${generationTopic.toLowerCase()}. Вы узнаете о преимуществах, характеристиках и особенностях использования.\n\n## Основные характеристики\n\nТовар отличается высоким качеством и надёжностью. Современные технологии производства гарантируют долгий срок службы.\n\n## Преимущества\n\n• Высокое качество\n• Доступная цена\n• Гарантия производителя\n• Быстрая доставка\n\n## Заключение\n\nЗакажите ${generationTopic.toLowerCase()} прямо сейчас и убедитесь в качестве сами!`;
             break;
           case 'news':
-            results[fieldId] = `Новое поступление: ${generationTopic} теперь в наличии!\n\nРады сообщить, что в нашем каталоге появились новинки в категории ${generationTopic}. Расширенный ассортимент, актуальные модели и выгодные цены.\n\nУспейте оформить заказ с дополнительной скидкой 10% для первых покупателей. Акция действует до конца месяца. Доставка по всей России!`;
+            results[fieldId] = `Новинка: ${generationTopic} уже в наличии! Спешите заказать по специальной цене. Ограниченное количество. Доставка по России бесплатно при заказе от 5000 рублей.`;
             break;
           case 'tags':
-            results[fieldId] = `${generationTopic.toLowerCase()}, купить онлайн, доставка, качество, выгодная цена`;
+            const tags = generationTopic.toLowerCase().split(' ').slice(0, 5);
+            results[fieldId] = [...tags, 'купить', 'цена', 'доставка', 'интернет-магазин'].join(', ');
             break;
+          default:
+            results[fieldId] = `Сгенерированный контент для: ${field.label}`;
         }
       }
     });
 
     setGenerationResults(results);
-    toast.success(`Сгенерировано ${selectedFields.size} полей`);
+    toast.success(`Успешно сгенерировано полей: ${selectedFields.size}`);
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex h-screen">
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-
-        <main className="flex-1 overflow-hidden">
-          {activeTab === 'generation' && (
-            <GenerationTab
-              generationTopic={generationTopic}
-              setGenerationTopic={setGenerationTopic}
-              productUrl={productUrl}
-              setProductUrl={setProductUrl}
-              fieldTypes={fieldTypes}
-              selectedFields={selectedFields}
-              toggleField={toggleField}
-              generationResults={generationResults}
-              handleGenerate={handleGenerate}
-              handleAnalyzeUrl={handleAnalyzeUrl}
-              isAnalyzing={isAnalyzing}
-              extractedData={extractedData}
-              brandDescription={brandDescription}
-              setBrandDescription={setBrandDescription}
-            />
-          )}
-
-          {activeTab === 'prompts' && (
-            <PromptsTab prompts={prompts} />
-          )}
-
-          {activeTab === 'media' && (
-            <MediaTab />
-          )}
-
-          {activeTab === 'history' && (
-            <HistoryTab />
-          )}
-
-          {activeTab === 'actualization' && (
-            <ActualizationTab 
-              sources={sources}
-              onPolicyChange={handlePolicyChange}
-            />
-          )}
-
-          {activeTab === 'settings' && (
-            <SettingsTab 
-              trafficSettings={trafficSettings} 
-              setTrafficSettings={setTrafficSettings}
-              currentState={getCurrentState()}
-              onLoadVersion={handleLoadVersion}
-            />
-          )}
-        </main>
-      </div>
+    <div className="h-screen flex bg-background">
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      
+      <main className="flex-1 overflow-hidden">
+        {activeTab === 'generation' && (
+          <GenerationTab
+            generationTopic={generationTopic}
+            setGenerationTopic={setGenerationTopic}
+            productUrl={productUrl}
+            setProductUrl={setProductUrl}
+            fieldTypes={fieldTypes}
+            selectedFields={selectedFields}
+            toggleField={toggleField}
+            generationResults={generationResults}
+            handleGenerate={handleGenerate}
+            handleAnalyzeUrl={handleAnalyzeUrl}
+            isAnalyzing={isAnalyzing}
+            extractedData={extractedData}
+          />
+        )}
+        
+        {activeTab === 'prompts' && (
+          <PromptsTab prompts={prompts} />
+        )}
+        
+        {activeTab === 'actualization' && (
+          <ActualizationTab sources={sources} />
+        )}
+        
+        {activeTab === 'media' && (
+          <MediaTab />
+        )}
+        
+        {activeTab === 'history' && (
+          <HistoryTab
+            onLoadVersion={handleLoadVersion}
+            getCurrentState={getCurrentState}
+          />
+        )}
+        
+        {activeTab === 'settings' && (
+          <SettingsTab
+            trafficSettings={trafficSettings}
+            setTrafficSettings={setTrafficSettings}
+            seoPolicy={seoPolicy}
+            onPolicyChange={handlePolicyChange}
+          />
+        )}
+      </main>
     </div>
   );
 };
