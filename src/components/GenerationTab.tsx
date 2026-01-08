@@ -32,6 +32,7 @@ interface GenerationTabProps {
   handleAnalyzeUrl: () => void;
   isAnalyzing: boolean;
   extractedData: string;
+  aiAnalysisData: any;
 }
 
 const GenerationTab = ({
@@ -46,7 +47,8 @@ const GenerationTab = ({
   handleGenerate,
   handleAnalyzeUrl,
   isAnalyzing,
-  extractedData
+  extractedData,
+  aiAnalysisData
 }: GenerationTabProps) => {
   const groupedFields = fieldTypes.reduce((acc, field) => {
     if (!acc[field.category]) {
@@ -87,9 +89,25 @@ const GenerationTab = ({
                 <div className="flex items-start gap-2 mb-2">
                   <Icon name="Database" size={16} className="text-accent mt-0.5" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium">Сохранённые данные из анализа</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium">Сохранённые данные из анализа</p>
+                      {aiAnalysisData?.has_ai_analysis && (
+                        <Badge variant="default" className="bg-green-500 text-white text-xs">
+                          <Icon name="Sparkles" size={12} className="mr-1" />
+                          AI-анализ
+                        </Badge>
+                      )}
+                      {!aiAnalysisData?.has_ai_analysis && (
+                        <Badge variant="secondary" className="text-xs">
+                          <Icon name="FileText" size={12} className="mr-1" />
+                          Базовый
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Эти данные будут использованы при генерации контента
+                      {aiAnalysisData?.has_ai_analysis 
+                        ? 'Данные обработаны с помощью AI для улучшенной генерации'
+                        : 'Эти данные будут использованы при генерации контента'}
                     </p>
                   </div>
                 </div>
@@ -141,9 +159,25 @@ const GenerationTab = ({
                 <div className="flex items-start gap-2 mb-2">
                   <Icon name="CheckCircle2" size={16} className="text-accent mt-0.5" />
                   <div className="flex-1">
-                    <p className="text-sm font-medium">Данные успешно извлечены</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium">Данные успешно извлечены</p>
+                      {aiAnalysisData?.has_ai_analysis && (
+                        <Badge variant="default" className="bg-green-500 text-white text-xs">
+                          <Icon name="Sparkles" size={12} className="mr-1" />
+                          AI-анализ
+                        </Badge>
+                      )}
+                      {!aiAnalysisData?.has_ai_analysis && (
+                        <Badge variant="secondary" className="text-xs">
+                          <Icon name="FileText" size={12} className="mr-1" />
+                          Базовый
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Информация о товаре готова для генерации SEO-контента
+                      {aiAnalysisData?.has_ai_analysis 
+                        ? 'Данные обработаны с помощью AI для улучшенной генерации'
+                        : 'Информация о товаре готова для генерации SEO-контента'}
                     </p>
                   </div>
                 </div>

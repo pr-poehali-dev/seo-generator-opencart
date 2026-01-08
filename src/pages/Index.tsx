@@ -382,6 +382,7 @@ const Index = () => {
             handleAnalyzeUrl={handleAnalyzeUrl}
             isAnalyzing={isAnalyzing}
             extractedData={extractedData}
+            aiAnalysisData={aiAnalysisData}
           />
         )}
         
