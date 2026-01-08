@@ -8,6 +8,7 @@ import MediaTab from '@/components/MediaTab';
 import HistoryTab from '@/components/HistoryTab';
 import SettingsTab from '@/components/SettingsTab';
 import type { Version } from '@/utils/versionManager';
+import type { SEOPolicy } from '@/utils/seoKnowledgeManager';
 
 interface FieldType {
   id: string;
@@ -97,6 +98,12 @@ const Index = () => {
     targetYandex: 85,
     optimizeChannel: true
   });
+
+  const [seoPolicy, setSeoPolicy] = useState<SEOPolicy | null>(null);
+
+  const handlePolicyChange = (policy: SEOPolicy) => {
+    setSeoPolicy(policy);
+  };
 
   const toggleField = (fieldId: string) => {
     const newSelected = new Set(selectedFields);
@@ -269,7 +276,10 @@ const Index = () => {
           )}
 
           {activeTab === 'actualization' && (
-            <ActualizationTab sources={sources} />
+            <ActualizationTab 
+              sources={sources}
+              onPolicyChange={handlePolicyChange}
+            />
           )}
 
           {activeTab === 'settings' && (
