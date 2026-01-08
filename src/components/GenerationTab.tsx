@@ -81,6 +81,25 @@ const GenerationTab = ({
                 Введите название товара или категории вручную
               </p>
             </div>
+            
+            {extractedData && (
+              <Card className="p-4 bg-accent/5 border-accent/50">
+                <div className="flex items-start gap-2 mb-2">
+                  <Icon name="Database" size={16} className="text-accent mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Сохранённые данные из анализа</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Эти данные будут использованы при генерации контента
+                    </p>
+                  </div>
+                </div>
+                <ScrollArea className="h-24 mt-2">
+                  <pre className="text-xs text-muted-foreground whitespace-pre-wrap">
+                    {extractedData}
+                  </pre>
+                </ScrollArea>
+              </Card>
+            )}
           </TabsContent>
           
           <TabsContent value="url" className="space-y-4 mt-4">

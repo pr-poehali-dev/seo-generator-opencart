@@ -147,30 +147,39 @@ const Index = () => {
     setIsAnalyzing(true);
     
     try {
-      const response = await fetch('https://r2.jamsapi.workers.dev/', {
+      const response = await fetch('https://functions.poehali.dev/56cbafb3-e439-4d58-975a-b974dfd5ca8f', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          url: productUrl,
-          prompt: 'Извлеки из этой страницы: название товара, бренд, категорию, все характеристики, цену, описание. Также проанализируй все изображения на странице и опиши что на них изображено. Верни структурированную информацию на русском языке.'
+          type: 'product',
+          productUrl: productUrl
         })
       });
 
-      if (!response.ok) throw new Error('Ошибка анализа страницы');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Ошибка анализа страницы');
+      }
 
       const data = await response.json();
-      const extracted = data.answer || data.content || 'Не удалось извлечь данные';
       
+      console.log('📦 Собранные данные:', data);
+      
+      const extracted = data.extracted_data || 'Не удалось извлечь данные';
       setExtractedData(extracted);
       
-      const productName = extracted.match(/название[:\s]+([^\n]+)/i)?.[1] || 
-                          extracted.match(/товар[:\s]+([^\n]+)/i)?.[1] || 
-                          'Товар';
+      const productName = data.product_name || 'Товар';
       setGenerationTopic(productName.trim());
       
       toast.success('Данные успешно извлечены из страницы');
+      
+      console.log('✅ Данные сохранены в контекст:', {
+        topic: productName,
+        extractedLength: extracted.length,
+        brand: data.brand
+      });
     } catch (error) {
-      console.error(error);
+      console.error('❌ Ошибка анализа:', error);
       toast.error('Не удалось проанализировать страницу');
     } finally {
       setIsAnalyzing(false);

@@ -115,6 +115,99 @@ def analyze_category_page(url: str) -> Dict:
     except Exception as e:
         raise Exception(f"Ошибка при анализе страницы: {str(e)}")
 
+def analyze_product_page(url: str) -> Dict:
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        )
+        
+        with urllib.request.urlopen(req, timeout=15) as response:
+            html = response.read().decode('utf-8', errors='ignore')
+        
+        title_match = re.search(r'<title[^>]*>(.*?)</title>', html, re.IGNORECASE | re.DOTALL)
+        page_title = re.sub(r'<[^>]+>', '', title_match.group(1)).strip() if title_match else ''
+        
+        h1_match = re.search(r'<h1[^>]*>(.*?)</h1>', html, re.IGNORECASE | re.DOTALL)
+        h1_text = re.sub(r'<[^>]+>', '', h1_match.group(1)).strip() if h1_match else ''
+        
+        product_name = h1_text or page_title.split('|')[0].strip()
+        
+        brand_patterns = [
+            r'"brand"[:\s]*"([^"]+)"',
+            r'data-brand="([^"]+)"',
+            r'"manufacturer"[:\s]*"([^"]+)"',
+            r'Бренд[:\s]*([А-ЯA-Z][а-яa-z]+)',
+            r'Производитель[:\s]*([А-ЯA-Z][а-яa-z]+)'
+        ]
+        
+        brand = ''
+        for pattern in brand_patterns:
+            match = re.search(pattern, html, re.IGNORECASE)
+            if match:
+                brand = match.group(1).strip()
+                break
+        
+        price_patterns = [
+            r'(\d[\d\s]{3,})\s*₽',
+            r'(\d[\d\s]{3,})\s*руб',
+            r'"price"[:\s]*"?(\d+)"?',
+            r'data-price="(\d+)"'
+        ]
+        
+        price = ''
+        for pattern in price_patterns:
+            match = re.search(pattern, html)
+            if match:
+                price_num = match.group(1).replace(' ', '')
+                price = f"{price_num} ₽"
+                break
+        
+        desc_patterns = [
+            r'<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']+)',
+            r'"description"[:\s]*"([^"]+)"',
+            r'<div[^>]*class="[^"]*description[^"]*"[^>]*>(.*?)</div>'
+        ]
+        
+        description = ''
+        for pattern in desc_patterns:
+            match = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
+            if match:
+                description = re.sub(r'<[^>]+>', '', match.group(1)).strip()[:500]
+                break
+        
+        spec_section = re.search(r'<table[^>]*>(.*?)</table>', html, re.IGNORECASE | re.DOTALL)
+        specifications = []
+        if spec_section:
+            rows = re.findall(r'<tr[^>]*>(.*?)</tr>', spec_section.group(1), re.IGNORECASE | re.DOTALL)
+            for row in rows[:15]:
+                cells = re.findall(r'<t[dh][^>]*>(.*?)</t[dh]>', row, re.IGNORECASE | re.DOTALL)
+                if len(cells) >= 2:
+                    key = re.sub(r'<[^>]+>', '', cells[0]).strip()
+                    value = re.sub(r'<[^>]+>', '', cells[1]).strip()
+                    if key and value:
+                        specifications.append(f"{key}: {value}")
+        
+        return {
+            'product_name': product_name,
+            'brand': brand,
+            'price': price,
+            'description': description,
+            'specifications': specifications,
+            'page_title': page_title,
+            'h1': h1_text,
+            'raw_data': {
+                'title': page_title,
+                'h1': h1_text,
+                'brand': brand,
+                'price': price,
+                'specs_count': len(specifications)
+            }
+        }
+    
+    except Exception as e:
+        raise Exception(f"Ошибка при анализе товара: {str(e)}")
+
 def generate_category_description(analysis: Dict, category_name: str) -> str:
     brands_text = ''
     if analysis['brands']:
@@ -214,6 +307,47 @@ def handler(event: dict, context) -> dict:
                     'type': 'brand',
                     'brandInfo': brand_info,
                     'source': 'Wikipedia (ru)' if brand_info else 'none'
+                })
+            }
+        
+        elif analysis_type == 'product':
+            product_url = body.get('productUrl', '').strip()
+            
+            if not product_url:
+                return {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'error': 'productUrl is required'})
+                }
+            
+            analysis = analyze_product_page(product_url)
+            
+            extracted_text = f"""Название: {analysis['product_name']}
+Бренд: {analysis['brand']}
+Цена: {analysis['price']}
+
+Описание:
+{analysis['description']}
+
+Характеристики:
+{chr(10).join(analysis['specifications'][:10])}"""
+            
+            return {
+                'statusCode': 200,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({
+                    'type': 'product',
+                    'product_name': analysis['product_name'],
+                    'brand': analysis['brand'],
+                    'extracted_data': extracted_text,
+                    'raw_data': analysis['raw_data'],
+                    'source': 'page_analysis'
                 })
             }
         
