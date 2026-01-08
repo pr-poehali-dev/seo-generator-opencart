@@ -5,6 +5,7 @@ import re
 from html.parser import HTMLParser
 from collections import Counter
 from typing import Dict, List, Set
+from ai_analyzer import analyze_product_with_ai, format_extracted_data
 
 class ProductParser(HTMLParser):
     def __init__(self):
@@ -115,7 +116,7 @@ def analyze_category_page(url: str) -> Dict:
     except Exception as e:
         raise Exception(f"Ошибка при анализе страницы: {str(e)}")
 
-def analyze_product_page(url: str) -> Dict:
+def analyze_product_page(url: str, use_ai: bool = True) -> Dict:
     try:
         req = urllib.request.Request(
             url,
@@ -188,21 +189,27 @@ def analyze_product_page(url: str) -> Dict:
                     if key and value:
                         specifications.append(f"{key}: {value}")
         
-        return {
+        basic_data = {
             'product_name': product_name,
             'brand': brand,
             'price': price,
             'description': description,
             'specifications': specifications,
             'page_title': page_title,
-            'h1': h1_text,
-            'raw_data': {
-                'title': page_title,
-                'h1': h1_text,
-                'brand': brand,
-                'price': price,
-                'specs_count': len(specifications)
-            }
+            'h1': h1_text
+        }
+        
+        ai_analysis = None
+        if use_ai:
+            ai_analysis = analyze_product_with_ai(html, basic_data)
+        
+        return {
+            'product_name': ai_analysis.get('full_name', product_name) if ai_analysis else product_name,
+            'brand': brand,
+            'price': price,
+            'ai_analysis': ai_analysis,
+            'basic_data': basic_data,
+            'has_ai_analysis': ai_analysis is not None
         }
     
     except Exception as e:
@@ -323,17 +330,12 @@ def handler(event: dict, context) -> dict:
                     'body': json.dumps({'error': 'productUrl is required'})
                 }
             
-            analysis = analyze_product_page(product_url)
+            analysis = analyze_product_page(product_url, use_ai=True)
             
-            extracted_text = f"""Название: {analysis['product_name']}
-Бренд: {analysis['brand']}
-Цена: {analysis['price']}
-
-Описание:
-{analysis['description']}
-
-Характеристики:
-{chr(10).join(analysis['specifications'][:10])}"""
+            if analysis['has_ai_analysis']:
+                extracted_text = format_extracted_data(analysis['ai_analysis'], analysis['basic_data'])
+            else:
+                extracted_text = format_extracted_data(None, analysis['basic_data'])
             
             return {
                 'statusCode': 200,
@@ -346,9 +348,10 @@ def handler(event: dict, context) -> dict:
                     'product_name': analysis['product_name'],
                     'brand': analysis['brand'],
                     'extracted_data': extracted_text,
-                    'raw_data': analysis['raw_data'],
-                    'source': 'page_analysis'
-                })
+                    'has_ai_analysis': analysis['has_ai_analysis'],
+                    'ai_analysis': analysis['ai_analysis'],
+                    'source': 'ai_analysis' if analysis['has_ai_analysis'] else 'basic_parsing'
+                }, ensure_ascii=False)
             }
         
         elif analysis_type == 'category':
