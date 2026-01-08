@@ -1,0 +1,44 @@
+{
+  "tests": [
+    {
+      "name": "Generate image test",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "type": "image",
+        "prompt": "Professional photo of wireless headphones on white background",
+        "options": {
+          "size": "1024x1024",
+          "quality": "standard",
+          "style": "vivid"
+        }
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "status": "string",
+        "type": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Generate video test",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "type": "video",
+        "prompt": "Product unboxing with smooth camera movement",
+        "options": {
+          "duration": "5",
+          "video_type": "video",
+          "animation": "smooth"
+        }
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "status": "string",
+        "type": "video"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
