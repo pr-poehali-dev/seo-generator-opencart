@@ -41,6 +41,7 @@ const Index = () => {
   const [productUrl, setProductUrl] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [extractedData, setExtractedData] = useState('');
+  const [aiAnalysisData, setAiAnalysisData] = useState<any>(null);
   const [generationResults, setGenerationResults] = useState<Record<string, string>>({});
   
   const [fieldTypes] = useState<FieldType[]>([
@@ -167,6 +168,7 @@ const Index = () => {
       
       const extracted = data.extracted_data || 'Не удалось извлечь данные';
       setExtractedData(extracted);
+      setAiAnalysisData(data);
       
       const productName = data.product_name || 'Товар';
       setGenerationTopic(productName.trim());
@@ -176,7 +178,8 @@ const Index = () => {
       console.log('✅ Данные сохранены в контекст:', {
         topic: productName,
         extractedLength: extracted.length,
-        brand: data.brand
+        brand: data.brand,
+        hasAiAnalysis: data.has_ai_analysis
       });
     } catch (error) {
       console.error('❌ Ошибка анализа:', error);
@@ -260,22 +263,59 @@ const Index = () => {
       if (field) {
         switch(fieldId) {
           case 'h1':
-            results[fieldId] = `${generationTopic} — купить в интернет-магазине с доставкой`;
+            if (aiAnalysisData?.ai_analysis?.seo_meta?.h1) {
+              results[fieldId] = aiAnalysisData.ai_analysis.seo_meta.h1;
+            } else {
+              results[fieldId] = `${generationTopic} — купить в интернет-магазине с доставкой`;
+            }
             break;
           case 'title':
-            results[fieldId] = `${generationTopic} | Каталог, цены, отзывы | Интернет-магазин`;
+            if (aiAnalysisData?.ai_analysis?.seo_meta?.title) {
+              results[fieldId] = aiAnalysisData.ai_analysis.seo_meta.title;
+            } else {
+              results[fieldId] = `${generationTopic} | Каталог, цены, отзывы | Интернет-магазин`;
+            }
             break;
           case 'description':
-            results[fieldId] = `${generationTopic} в наличии. Широкий ассортимент, доставка по России, гарантия качества. Заказывайте онлайн с выгодой!`;
+            if (aiAnalysisData?.ai_analysis?.seo_meta?.description) {
+              results[fieldId] = aiAnalysisData.ai_analysis.seo_meta.description;
+            } else {
+              results[fieldId] = `${generationTopic} в наличии. Широкий ассортимент, доставка по России, гарантия качества. Заказывайте онлайн с выгодой!`;
+            }
             break;
           case 'keywords':
-            const keywords = generationTopic.toLowerCase().split(' ');
-            results[fieldId] = `${keywords.join(', ')}, купить, цена, отзывы, доставка, интернет-магазин`;
+            if (aiAnalysisData?.ai_analysis?.seo_meta?.keywords) {
+              results[fieldId] = aiAnalysisData.ai_analysis.seo_meta.keywords.join(', ');
+            } else {
+              const keywords = generationTopic.toLowerCase().split(' ');
+              results[fieldId] = `${keywords.join(', ')}, купить, цена, отзывы, доставка, интернет-магазин`;
+            }
             break;
           case 'product_desc':
-            results[fieldId] = context 
-              ? `${generationTopic}\n\n${context.substring(0, 800)}\n\nМы предлагаем широкий выбор товаров с гарантией качества и быстрой доставкой по всей России. Закажите ${generationTopic.toLowerCase()} прямо сейчас и получите профессиональную консультацию наших специалистов.`
-              : `${generationTopic}\n\nПредставляем вашему вниманию ${generationTopic.toLowerCase()}. Этот товар отличается высоким качеством и надёжностью. Идеально подходит для повседневного использования.\n\nОсновные преимущества:\n• Высокое качество материалов\n• Современный дизайн\n• Длительный срок службы\n• Доступная цена\n\nМы предлагаем быструю доставку по всей России и гарантию на все товары. Закажите ${generationTopic.toLowerCase()} прямо сейчас!`;
+            if (aiAnalysisData?.ai_analysis) {
+              const ai = aiAnalysisData.ai_analysis;
+              let desc = `${ai.full_name || generationTopic}\n\n`;
+              desc += `${ai.description || ''}\n\n`;
+              
+              if (ai.key_features && ai.key_features.length > 0) {
+                desc += `Ключевые особенности:\n${ai.key_features.slice(0, 7).map((f: string) => `• ${f}`).join('\n')}\n\n`;
+              }
+              
+              if (ai.advantages && ai.advantages.length > 0) {
+                desc += `Преимущества:\n${ai.advantages.slice(0, 5).map((a: string) => `✓ ${a}`).join('\n')}\n\n`;
+              }
+              
+              if (aiAnalysisData.price) {
+                desc += `Цена: ${aiAnalysisData.price}\n`;
+              }
+              
+              desc += `\nЗакажите онлайн с доставкой по всей России. Гарантия качества!`;
+              results[fieldId] = desc;
+            } else {
+              results[fieldId] = context 
+                ? `${generationTopic}\n\n${context.substring(0, 800)}\n\nМы предлагаем широкий выбор товаров с гарантией качества и быстрой доставкой по всей России. Закажите ${generationTopic.toLowerCase()} прямо сейчас и получите профессиональную консультацию наших специалистов.`
+                : `${generationTopic}\n\nПредставляем вашему вниманию ${generationTopic.toLowerCase()}. Этот товар отличается высоким качеством и надёжностью. Идеально подходит для повседневного использования.\n\nОсновные преимущества:\n• Высокое качество материалов\n• Современный дизайн\n• Длительный срок службы\n• Доступная цена\n\nМы предлагаем быструю доставку по всей России и гарантию на все товары. Закажите ${generationTopic.toLowerCase()} прямо сейчас!`;
+            }
             break;
           case 'category_desc':
             if (categoryAnalysis && categoryAnalysis.description) {
@@ -285,13 +325,20 @@ const Index = () => {
             }
             break;
           case 'short_desc':
-            results[fieldId] = `${generationTopic} в наличии. Доставка по России. Гарантия качества. Низкие цены!`;
+            if (aiAnalysisData?.ai_analysis?.description) {
+              const shortDesc = aiAnalysisData.ai_analysis.description.split('.').slice(0, 2).join('.') + '.';
+              results[fieldId] = shortDesc.length > 300 ? shortDesc.substring(0, 297) + '...' : shortDesc;
+            } else {
+              results[fieldId] = `${generationTopic} в наличии. Доставка по России. Гарантия качества. Низкие цены!`;
+            }
             break;
           case 'brand_desc':
+            const brandName = aiAnalysisData?.brand || topic.split(' ').find((word: string) => word.length > 2 && word[0] === word[0].toUpperCase()) || topic;
+            
             if (brandInfo) {
-              results[fieldId] = `О бренде ${generationTopic}\n\n${brandInfo}\n\nНаши преимущества:\n• Широкий ассортимент оригинальной продукции\n• Гарантия качества на все товары\n• Быстрая доставка по России\n• Профессиональная поддержка клиентов\n\nВыбирайте качество и надёжность проверенного бренда!`;
+              results[fieldId] = `О бренде ${brandName}\n\n${brandInfo}\n\nНаши преимущества:\n• Широкий ассортимент оригинальной продукции\n• Гарантия качества на все товары\n• Быстрая доставка по России\n• Профессиональная поддержка клиентов\n\nВыбирайте качество и надёжность проверенного бренда!`;
             } else {
-              results[fieldId] = `О бренде ${generationTopic}\n\nМы — надёжный производитель с многолетним опытом на рынке. Наша миссия — предоставлять качественные товары по доступным ценам.\n\nНаши преимущества:\n• Собственное производство\n• Контроль качества на всех этапах\n• Гарантия на всю продукцию\n• Профессиональная поддержка клиентов\n\nМы постоянно совершенствуем наши товары, используя современные технологии и прислушиваясь к отзывам покупателей. Выбирая нас, вы выбираете надёжность и качество!`;
+              results[fieldId] = `О бренде ${brandName}\n\nМы — надёжный производитель с многолетним опытом на рынке. Наша миссия — предоставлять качественные товары по доступным ценам.\n\nНаши преимущества:\n• Собственное производство\n• Контроль качества на всех этапах\n• Гарантия на всю продукцию\n• Профессиональная поддержка клиентов\n\nМы постоянно совершенствуем наши товары, используя современные технологии и прислушиваясь к отзывам покупателей. Выбирая нас, вы выбираете надёжность и качество!`;
             }
             break;
           case 'blog_post':
