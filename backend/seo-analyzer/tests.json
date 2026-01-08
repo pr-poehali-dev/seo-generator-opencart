@@ -1,0 +1,63 @@
+{
+  "tests": [
+    {
+      "name": "Search brand Sony",
+      "method": "POST",
+      "body": {
+        "type": "brand",
+        "brandName": "Sony"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "type": "brand",
+        "brandInfo": "string",
+        "source": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Analyze category page",
+      "method": "POST",
+      "body": {
+        "type": "category",
+        "categoryUrl": "https://www.mvideo.ru/smartfony-i-svyaz/smartfony-205",
+        "categoryName": "Смартфоны"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "type": "category",
+        "description": "string",
+        "analysis": {
+          "brands": "array",
+          "keywords": "array"
+        }
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Missing required field for brand",
+      "method": "POST",
+      "body": {
+        "type": "brand"
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "brandName is required"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Missing required field for category",
+      "method": "POST",
+      "body": {
+        "type": "category",
+        "categoryName": "Test"
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "categoryUrl is required"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

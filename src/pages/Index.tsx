@@ -193,6 +193,7 @@ const Index = () => {
 
     const results: Record<string, string> = {};
     let brandInfo = '';
+    let categoryAnalysis: any = null;
     
     if (selectedFields.has('brand_desc')) {
       try {
@@ -200,12 +201,12 @@ const Index = () => {
           word.length > 2 && word[0] === word[0].toUpperCase()
         ) || topic;
         
-        const response = await fetch('https://functions.poehali.dev/9483717d-86e5-444f-a0fa-c4d872b62853', {
+        const response = await fetch('https://functions.poehali.dev/56cbafb3-e439-4d58-975a-b974dfd5ca8f', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ brandName: brandName })
+          body: JSON.stringify({ type: 'brand', brandName: brandName })
         });
         
         const data = await response.json();
@@ -215,6 +216,33 @@ const Index = () => {
         }
       } catch (error) {
         console.error('Ошибка при поиске информации о бренде:', error);
+      }
+    }
+    
+    if (selectedFields.has('category_desc') && productUrl.trim()) {
+      try {
+        toast.info('Анализируем категорию...');
+        
+        const response = await fetch('https://functions.poehali.dev/56cbafb3-e439-4d58-975a-b974dfd5ca8f', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            type: 'category', 
+            categoryUrl: productUrl,
+            categoryName: topic
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.description) {
+          categoryAnalysis = data;
+        }
+      } catch (error) {
+        console.error('Ошибка при анализе категории:', error);
+        toast.error('Не удалось проанализировать категорию');
       }
     }
     
@@ -241,7 +269,11 @@ const Index = () => {
               : `${generationTopic}\n\nПредставляем вашему вниманию ${generationTopic.toLowerCase()}. Этот товар отличается высоким качеством и надёжностью. Идеально подходит для повседневного использования.\n\nОсновные преимущества:\n• Высокое качество материалов\n• Современный дизайн\n• Длительный срок службы\n• Доступная цена\n\nМы предлагаем быструю доставку по всей России и гарантию на все товары. Закажите ${generationTopic.toLowerCase()} прямо сейчас!`;
             break;
           case 'category_desc':
-            results[fieldId] = `Каталог товаров категории ${generationTopic}. Большой выбор качественных товаров с доставкой по России. Низкие цены, гарантия качества, профессиональные консультации. Закажите онлайн или по телефону!`;
+            if (categoryAnalysis && categoryAnalysis.description) {
+              results[fieldId] = categoryAnalysis.description;
+            } else {
+              results[fieldId] = `Каталог товаров категории ${generationTopic}. Большой выбор качественных товаров с доставкой по России. Низкие цены, гарантия качества, профессиональные консультации. Закажите онлайн или по телефону!`;
+            }
             break;
           case 'short_desc':
             results[fieldId] = `${generationTopic} в наличии. Доставка по России. Гарантия качества. Низкие цены!`;
