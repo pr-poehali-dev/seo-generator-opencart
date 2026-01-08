@@ -208,26 +208,32 @@ const Index = () => {
     let categoryAnalysis: any = null;
     
     if (selectedFields.has('brand_desc')) {
-      try {
-        const brandName = topic.split(' ').find(word => 
-          word.length > 2 && word[0] === word[0].toUpperCase()
-        ) || topic;
-        
-        const response = await fetch('https://functions.poehali.dev/56cbafb3-e439-4d58-975a-b974dfd5ca8f', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ type: 'brand', brandName: brandName })
-        });
-        
-        const data = await response.json();
-        
-        if (data.brandInfo) {
-          brandInfo = data.brandInfo;
+      if (aiAnalysisData?.brand_page_info) {
+        brandInfo = aiAnalysisData.brand_page_info;
+        console.log('✅ Используем описание бренда из магазина:', aiAnalysisData.brand_page_url);
+      } else {
+        try {
+          const brandName = aiAnalysisData?.brand || topic.split(' ').find(word => 
+            word.length > 2 && word[0] === word[0].toUpperCase()
+          ) || topic;
+          
+          const response = await fetch('https://functions.poehali.dev/56cbafb3-e439-4d58-975a-b974dfd5ca8f', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ type: 'brand', brandName: brandName })
+          });
+          
+          const data = await response.json();
+          
+          if (data.brandInfo) {
+            brandInfo = data.brandInfo;
+            console.log('ℹ️ Используем описание бренда из Wikipedia');
+          }
+        } catch (error) {
+          console.error('Ошибка при поиске информации о бренде:', error);
         }
-      } catch (error) {
-        console.error('Ошибка при поиске информации о бренде:', error);
       }
     }
     

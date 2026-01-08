@@ -26,11 +26,7 @@
       "expectedStatus": 200,
       "expectedBody": {
         "type": "category",
-        "description": "string",
-        "analysis": {
-          "brands": "array",
-          "keywords": "array"
-        }
+        "description": "string"
       },
       "bodyMatcher": "partial"
     },

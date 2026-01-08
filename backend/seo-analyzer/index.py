@@ -116,6 +116,72 @@ def analyze_category_page(url: str) -> Dict:
     except Exception as e:
         raise Exception(f"Ошибка при анализе страницы: {str(e)}")
 
+def find_brand_page_url(html: str, product_url: str, brand_name: str) -> str:
+    '''Ищет ссылку на страницу бренда в HTML товара'''
+    if not brand_name:
+        return ''
+    
+    base_url = '/'.join(product_url.split('/')[:3])
+    
+    brand_link_patterns = [
+        rf'<a[^>]+href="([^"]*brand[^"]*{re.escape(brand_name)}[^"]*)"',
+        rf'<a[^>]+href="([^"]*{re.escape(brand_name)}[^"]*brand[^"]*)"',
+        rf'<a[^>]+href="([^"]*производител[^"]*{re.escape(brand_name)}[^"]*)"',
+        rf'<a[^>]+href="([^"]*brendy[^"]*{re.escape(brand_name)}[^"]*)"',
+        rf'<a[^>]+href="([^"]*brands[^"]*{re.escape(brand_name)}[^"]*)"'
+    ]
+    
+    for pattern in brand_link_patterns:
+        match = re.search(pattern, html, re.IGNORECASE)
+        if match:
+            url = match.group(1)
+            if url.startswith('http'):
+                return url
+            elif url.startswith('/'):
+                return base_url + url
+            else:
+                return base_url + '/' + url
+    
+    return ''
+
+def extract_brand_info_from_page(url: str) -> str:
+    '''Извлекает описание бренда со страницы бренда магазина'''
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        )
+        
+        with urllib.request.urlopen(req, timeout=15) as response:
+            html = response.read().decode('utf-8', errors='ignore')
+        
+        desc_patterns = [
+            r'<div[^>]*class="[^"]*brand[_-]?description[^"]*"[^>]*>(.*?)</div>',
+            r'<div[^>]*class="[^"]*about[_-]?brand[^"]*"[^>]*>(.*?)</div>',
+            r'<div[^>]*class="[^"]*description[^"]*"[^>]*>(.*?)</div>',
+            r'<section[^>]*class="[^"]*brand[^"]*"[^>]*>(.*?)</section>',
+            r'<article[^>]*>(.*?)</article>'
+        ]
+        
+        for pattern in desc_patterns:
+            match = re.search(pattern, html, re.IGNORECASE | re.DOTALL)
+            if match:
+                text = re.sub(r'<[^>]+>', ' ', match.group(1))
+                text = re.sub(r'\s+', ' ', text).strip()
+                if len(text) > 100:
+                    return text[:800] if len(text) > 800 else text
+        
+        paragraphs = re.findall(r'<p[^>]*>(.*?)</p>', html, re.IGNORECASE | re.DOTALL)
+        if paragraphs:
+            combined_text = ' '.join([re.sub(r'<[^>]+>', '', p).strip() for p in paragraphs[:5]])
+            combined_text = re.sub(r'\s+', ' ', combined_text).strip()
+            if len(combined_text) > 100:
+                return combined_text[:800] if len(combined_text) > 800 else combined_text
+        
+        return ''
+    except Exception as e:
+        return ''
+
 def analyze_product_page(url: str, use_ai: bool = True) -> Dict:
     try:
         req = urllib.request.Request(
@@ -189,6 +255,13 @@ def analyze_product_page(url: str, use_ai: bool = True) -> Dict:
                     if key and value:
                         specifications.append(f"{key}: {value}")
         
+        brand_page_url = ''
+        brand_page_info = ''
+        if brand:
+            brand_page_url = find_brand_page_url(html, url, brand)
+            if brand_page_url:
+                brand_page_info = extract_brand_info_from_page(brand_page_url)
+        
         basic_data = {
             'product_name': product_name,
             'brand': brand,
@@ -207,6 +280,8 @@ def analyze_product_page(url: str, use_ai: bool = True) -> Dict:
             'product_name': ai_analysis.get('full_name', product_name) if ai_analysis else product_name,
             'brand': brand,
             'price': price,
+            'brand_page_url': brand_page_url,
+            'brand_page_info': brand_page_info,
             'ai_analysis': ai_analysis,
             'basic_data': basic_data,
             'has_ai_analysis': ai_analysis is not None
@@ -347,6 +422,8 @@ def handler(event: dict, context) -> dict:
                     'type': 'product',
                     'product_name': analysis['product_name'],
                     'brand': analysis['brand'],
+                    'brand_page_url': analysis.get('brand_page_url', ''),
+                    'brand_page_info': analysis.get('brand_page_info', ''),
                     'extracted_data': extracted_text,
                     'has_ai_analysis': analysis['has_ai_analysis'],
                     'ai_analysis': analysis['ai_analysis'],
