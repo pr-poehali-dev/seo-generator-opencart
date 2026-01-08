@@ -9,8 +9,8 @@ def handler(event: dict, context) -> dict:
     Генерация изображений и видео для SEO-оптимизации
     
     Поддерживает:
-    - Изображения через DALL-E 3 / Flux / Stable Diffusion
-    - Видео через Runway / Luma / альтернативы Veo-3
+    - Изображения через DALL-E 3 (OpenAI)
+    - Видео: требует дополнительной настройки Runway ML / Luma API
     """
     
     if event.get('httpMethod') == 'OPTIONS':
