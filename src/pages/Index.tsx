@@ -177,7 +177,7 @@ const Index = () => {
     }
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     const topic = generationTopic.trim();
     const context = extractedData || '';
     
@@ -192,6 +192,31 @@ const Index = () => {
     }
 
     const results: Record<string, string> = {};
+    let brandInfo = '';
+    
+    if (selectedFields.has('brand_desc')) {
+      try {
+        const brandName = topic.split(' ').find(word => 
+          word.length > 2 && word[0] === word[0].toUpperCase()
+        ) || topic;
+        
+        const response = await fetch('https://functions.poehali.dev/9483717d-86e5-444f-a0fa-c4d872b62853', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ brandName: brandName })
+        });
+        
+        const data = await response.json();
+        
+        if (data.brandInfo) {
+          brandInfo = data.brandInfo;
+        }
+      } catch (error) {
+        console.error('Ошибка при поиске информации о бренде:', error);
+      }
+    }
     
     selectedFields.forEach(fieldId => {
       const field = fieldTypes.find(f => f.id === fieldId);
@@ -222,7 +247,11 @@ const Index = () => {
             results[fieldId] = `${generationTopic} в наличии. Доставка по России. Гарантия качества. Низкие цены!`;
             break;
           case 'brand_desc':
-            results[fieldId] = `О бренде ${generationTopic}\n\nМы — надёжный производитель с многолетним опытом на рынке. Наша миссия — предоставлять качественные товары по доступным ценам.\n\nНаши преимущества:\n• Собственное производство\n• Контроль качества на всех этапах\n• Гарантия на всю продукцию\n• Профессиональная поддержка клиентов\n\nМы постоянно совершенствуем наши товары, используя современные технологии и прислушиваясь к отзывам покупателей. Выбирая нас, вы выбираете надёжность и качество!`;
+            if (brandInfo) {
+              results[fieldId] = `О бренде ${generationTopic}\n\n${brandInfo}\n\nНаши преимущества:\n• Широкий ассортимент оригинальной продукции\n• Гарантия качества на все товары\n• Быстрая доставка по России\n• Профессиональная поддержка клиентов\n\nВыбирайте качество и надёжность проверенного бренда!`;
+            } else {
+              results[fieldId] = `О бренде ${generationTopic}\n\nМы — надёжный производитель с многолетним опытом на рынке. Наша миссия — предоставлять качественные товары по доступным ценам.\n\nНаши преимущества:\n• Собственное производство\n• Контроль качества на всех этапах\n• Гарантия на всю продукцию\n• Профессиональная поддержка клиентов\n\nМы постоянно совершенствуем наши товары, используя современные технологии и прислушиваясь к отзывам покупателей. Выбирая нас, вы выбираете надёжность и качество!`;
+            }
             break;
           case 'blog_post':
             results[fieldId] = context
