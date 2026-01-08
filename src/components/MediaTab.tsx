@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
 
@@ -14,6 +15,9 @@ interface GeneratedMedia {
   url: string;
   prompt: string;
   timestamp: number;
+  taskId?: string;
+  status?: 'processing' | 'completed' | 'failed';
+  progress?: number;
 }
 
 const MediaTab = () => {
@@ -110,10 +114,34 @@ const MediaTab = () => {
 
       const data = await response.json();
 
-      if (data.status === 'processing') {
-        toast.info(`Видео поставлено в очередь на генерацию. ${data.message}`);
-      } else if (data.status === 'error') {
-        toast.error(`Ошибка: ${data.error}`);
+      if (data.status === 'error') {
+        if (data.error.includes('RUNWAY_API_KEY')) {
+          toast.error('Необходимо настроить RUNWAY_API_KEY в секретах проекта');
+        } else {
+          toast.error(`Ошибка: ${data.error}`);
+        }
+        return;
+      }
+
+      if (data.status === 'processing' && data.task_id) {
+        toast.success('Видео генерируется! Ожидайте 1-3 минуты...');
+        
+        // Создаем placeholder для видео с task_id
+        const newMedia: GeneratedMedia = {
+          id: `video_${Date.now()}`,
+          type: 'video',
+          url: '', // Пока пустой, будет заполнен после генерации
+          prompt: videoPrompt,
+          timestamp: Date.now(),
+          taskId: data.task_id,
+          status: 'processing'
+        };
+
+        setGeneratedMedia([newMedia, ...generatedMedia]);
+        setVideoPrompt('');
+
+        // Запускаем проверку статуса
+        pollVideoStatus(data.task_id, newMedia.id);
       }
     } catch (error) {
       console.error(error);
@@ -121,6 +149,73 @@ const MediaTab = () => {
     } finally {
       setIsGeneratingVideo(false);
     }
+  };
+
+  const pollVideoStatus = async (taskId: string, mediaId: string) => {
+    const maxAttempts = 60; // 5 минут максимум (60 * 5 секунд)
+    let attempts = 0;
+
+    const checkStatus = async () => {
+      try {
+        const response = await fetch(
+          `https://functions.poehali.dev/4a12359f-155b-452d-a3f3-48b495c6444c?task_id=${taskId}`,
+          { method: 'GET' }
+        );
+
+        const data = await response.json();
+
+        if (data.status === 'completed' && data.url) {
+          // Обновляем media item с готовым URL
+          setGeneratedMedia(prev => 
+            prev.map(m => 
+              m.id === mediaId 
+                ? { ...m, url: data.url, status: 'completed' }
+                : m
+            )
+          );
+          toast.success('Видео готово!');
+          return true;
+        }
+
+        if (data.status === 'failed' || data.status === 'error') {
+          setGeneratedMedia(prev => prev.filter(m => m.id !== mediaId));
+          toast.error(`Ошибка генерации: ${data.error || 'Неизвестная ошибка'}`);
+          return true;
+        }
+
+        if (data.status === 'processing') {
+          const progress = data.progress || 0;
+          setGeneratedMedia(prev => 
+            prev.map(m => 
+              m.id === mediaId 
+                ? { ...m, progress }
+                : m
+            )
+          );
+        }
+
+        attempts++;
+        if (attempts >= maxAttempts) {
+          toast.error('Превышено время ожидания генерации видео');
+          setGeneratedMedia(prev => prev.filter(m => m.id !== mediaId));
+          return true;
+        }
+
+        // Проверяем снова через 5 секунд
+        setTimeout(checkStatus, 5000);
+        return false;
+
+      } catch (error) {
+        console.error('Error checking video status:', error);
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(checkStatus, 5000);
+        }
+        return false;
+      }
+    };
+
+    checkStatus();
   };
 
   const handleCopyUrl = (url: string) => {
@@ -213,7 +308,7 @@ const MediaTab = () => {
           <Card className="p-5">
             <h3 className="font-semibold mb-4 flex items-center gap-2">
               <Icon name="Video" size={20} />
-              Генерация видео (в разработке)
+              Генерация видео (Runway ML Gen-3)
             </h3>
             
             <div className="space-y-4">
@@ -290,7 +385,7 @@ const MediaTab = () => {
               <div className="p-3 bg-secondary/50 rounded-md text-sm text-muted-foreground">
                 <p className="flex items-center gap-2">
                   <Icon name="Info" size={14} />
-                  <span>Генерация видео требует дополнительной настройки API (Runway ML, Luma Dream Machine)</span>
+                  <span>Генерация через Runway ML Gen-3. Время генерации: 1-3 минуты. Стоимость: ~$0.05 за 5 сек.</span>
                 </p>
               </div>
             </div>
@@ -307,10 +402,35 @@ const MediaTab = () => {
                 {generatedMedia.map((media) => (
                   <div key={media.id} className="border rounded-lg p-3 space-y-3">
                     <div className="relative aspect-square bg-secondary rounded-md overflow-hidden">
-                      {media.type === 'image' && (
+                      {media.type === 'image' && media.url && (
                         <img 
                           src={media.url} 
                           alt={media.prompt}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                      
+                      {media.type === 'video' && media.status === 'processing' && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+                          <Icon name="Loader2" size={32} className="animate-spin mb-3" />
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Генерация видео...
+                          </p>
+                          {media.progress !== undefined && (
+                            <div className="w-full">
+                              <Progress value={media.progress} className="h-2" />
+                              <p className="text-xs text-center mt-1 text-muted-foreground">
+                                {media.progress}%
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {media.type === 'video' && media.status === 'completed' && media.url && (
+                        <video 
+                          src={media.url} 
+                          controls
                           className="w-full h-full object-cover"
                         />
                       )}
@@ -331,26 +451,31 @@ const MediaTab = () => {
                       </p>
 
                       <div className="flex gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleCopyUrl(media.url)}
-                        >
-                          <Icon name="Copy" size={14} className="mr-1" />
-                          URL
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => window.open(media.url, '_blank')}
-                        >
-                          <Icon name="ExternalLink" size={14} className="mr-1" />
-                          Открыть
-                        </Button>
+                        {media.status !== 'processing' && media.url && (
+                          <>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleCopyUrl(media.url)}
+                            >
+                              <Icon name="Copy" size={14} className="mr-1" />
+                              URL
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => window.open(media.url, '_blank')}
+                            >
+                              <Icon name="ExternalLink" size={14} className="mr-1" />
+                              Открыть
+                            </Button>
+                          </>
+                        )}
                         <Button 
                           size="sm" 
                           variant="ghost"
                           onClick={() => handleDelete(media.id)}
+                          disabled={media.status === 'processing'}
                         >
                           <Icon name="Trash2" size={14} />
                         </Button>
