@@ -7,6 +7,7 @@ import ActualizationTab from '@/components/ActualizationTab';
 import MediaTab from '@/components/MediaTab';
 import HistoryTab from '@/components/HistoryTab';
 import SettingsTab from '@/components/SettingsTab';
+import type { Version } from '@/utils/versionManager';
 
 interface FieldType {
   id: string;
@@ -105,6 +106,28 @@ const Index = () => {
       newSelected.add(fieldId);
     }
     setSelectedFields(newSelected);
+  };
+
+  const handleLoadVersion = (version: Version) => {
+    setActiveTab(version.data.activeTab);
+    setGenerationTopic(version.data.generationTopic);
+    setProductUrl(version.data.productUrl);
+    setExtractedData(version.data.extractedData);
+    setGenerationResults(version.data.generationResults);
+    setSelectedFields(new Set(version.data.selectedFields));
+    setTrafficSettings(version.data.trafficSettings);
+  };
+
+  const getCurrentState = (): Version['data'] => {
+    return {
+      activeTab,
+      generationTopic,
+      productUrl,
+      extractedData,
+      generationResults,
+      selectedFields: Array.from(selectedFields),
+      trafficSettings
+    };
   };
 
   const handleAnalyzeUrl = async () => {
@@ -252,7 +275,9 @@ const Index = () => {
           {activeTab === 'settings' && (
             <SettingsTab 
               trafficSettings={trafficSettings} 
-              setTrafficSettings={setTrafficSettings} 
+              setTrafficSettings={setTrafficSettings}
+              currentState={getCurrentState()}
+              onLoadVersion={handleLoadVersion}
             />
           )}
         </main>

@@ -4,6 +4,8 @@ import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
+import VersionManager from '@/components/VersionManager';
+import type { Version } from '@/utils/versionManager';
 
 interface TrafficSettings {
   yandexAndroid: number;
@@ -16,9 +18,11 @@ interface TrafficSettings {
 interface SettingsTabProps {
   trafficSettings: TrafficSettings;
   setTrafficSettings: (settings: TrafficSettings) => void;
+  currentState: Version['data'];
+  onLoadVersion: (version: Version) => void;
 }
 
-const SettingsTab = ({ trafficSettings, setTrafficSettings }: SettingsTabProps) => {
+const SettingsTab = ({ trafficSettings, setTrafficSettings, currentState, onLoadVersion }: SettingsTabProps) => {
   return (
     <div className="h-full flex flex-col">
       <div className="border-b border-border p-6">
@@ -131,6 +135,13 @@ const SettingsTab = ({ trafficSettings, setTrafficSettings }: SettingsTabProps) 
                 <Switch defaultChecked />
               </div>
             </div>
+          </Card>
+
+          <Card className="p-5">
+            <VersionManager 
+              onLoadVersion={onLoadVersion}
+              currentState={currentState}
+            />
           </Card>
         </div>
       </ScrollArea>
