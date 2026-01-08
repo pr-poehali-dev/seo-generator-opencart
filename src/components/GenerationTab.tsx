@@ -57,11 +57,11 @@ const GenerationTab = ({
   }, {} as Record<string, FieldType[]>);
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="border-b border-border p-6">
-        <h2 className="text-2xl font-semibold mb-4">Генерация SEO-контента</h2>
+    <ScrollArea className="h-full">
+      <div className="p-6 space-y-6 max-w-7xl mx-auto">
+        <h2 className="text-2xl font-semibold">Генерация SEO-контента</h2>
         
-        <Tabs defaultValue="manual" className="mb-4">
+        <Tabs defaultValue="manual">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="manual">Ручной ввод</TabsTrigger>
             <TabsTrigger value="url">Анализ по URL</TabsTrigger>
@@ -158,10 +158,9 @@ const GenerationTab = ({
         </Tabs>
         
         <div className="space-y-4">
-
           <div>
             <Label className="mb-2 block">Выберите поля для генерации</Label>
-            <ScrollArea className="h-48 rounded-md border border-border p-4">
+            <Card className="p-4">
               {Object.entries(groupedFields).map(([category, fields]) => (
                 <div key={category} className="mb-4 last:mb-0">
                   <p className="text-sm font-medium text-muted-foreground mb-2">{category}</p>
@@ -189,7 +188,7 @@ const GenerationTab = ({
                   </div>
                 </div>
               ))}
-            </ScrollArea>
+            </Card>
           </div>
 
           <Button onClick={handleGenerate} className="w-full" size="lg">
@@ -197,11 +196,9 @@ const GenerationTab = ({
             Сгенерировать
           </Button>
         </div>
-      </div>
 
-      <ScrollArea className="flex-1 p-6">
         {Object.keys(generationResults).length === 0 ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center py-16">
             <div className="text-center text-muted-foreground">
               <Icon name="FileText" size={48} className="mx-auto mb-4 opacity-50" />
               <p className="text-lg font-medium mb-2">Здесь появятся результаты</p>
@@ -250,8 +247,8 @@ const GenerationTab = ({
             })}
           </div>
         )}
-      </ScrollArea>
-    </div>
+      </div>
+    </ScrollArea>
   );
 };
 
