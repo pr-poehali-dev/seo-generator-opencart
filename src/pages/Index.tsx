@@ -41,6 +41,9 @@ interface Source {
 const Index = () => {
   const [activeTab, setActiveTab] = useState('generation');
   const [generationTopic, setGenerationTopic] = useState('');
+  const [productUrl, setProductUrl] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [extractedData, setExtractedData] = useState('');
   const [generationResults, setGenerationResults] = useState<Record<string, string>>({});
   
   const [fieldTypes] = useState<FieldType[]>([
@@ -109,9 +112,51 @@ const Index = () => {
     setSelectedFields(newSelected);
   };
 
+  const handleAnalyzeUrl = async () => {
+    if (!productUrl.trim()) {
+      toast.error('Введите URL страницы товара');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    
+    try {
+      const response = await fetch('https://r2.jamsapi.workers.dev/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: productUrl,
+          prompt: 'Извлеки из этой страницы: название товара, бренд, категорию, все характеристики, цену, описание. Также проанализируй все изображения на странице и опиши что на них изображено. Верни структурированную информацию на русском языке.'
+        })
+      });
+
+      if (!response.ok) throw new Error('Ошибка анализа страницы');
+
+      const data = await response.json();
+      const extracted = data.answer || data.content || 'Не удалось извлечь данные';
+      
+      setExtractedData(extracted);
+      
+      const productName = extracted.match(/название[:\s]+([^\n]+)/i)?.[1] || 
+                          extracted.match(/товар[:\s]+([^\n]+)/i)?.[1] || 
+                          'Товар';
+      setGenerationTopic(productName.trim());
+      
+      toast.success('Данные успешно извлечены из страницы');
+    } catch (error) {
+      console.error(error);
+      toast.error('Не удалось проанализировать страницу');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   const handleGenerate = () => {
-    if (!generationTopic.trim()) {
-      toast.error('Введите тему генерации');
+    const topic = generationTopic.trim();
+    const context = extractedData || '';
+    
+    if (!topic) {
+      toast.error('Введите тему генерации или проанализируйте URL');
       return;
     }
 
@@ -125,6 +170,8 @@ const Index = () => {
     selectedFields.forEach(fieldId => {
       const field = fieldTypes.find(f => f.id === fieldId);
       if (field) {
+        const baseContent = context ? `На основе: ${context.slice(0, 200)}...\n\n` : '';
+        
         switch(fieldId) {
           case 'h1':
             results[fieldId] = `${generationTopic} — купить в интернет-магазине с доставкой`;
@@ -139,7 +186,11 @@ const Index = () => {
             results[fieldId] = `${generationTopic.toLowerCase()}, купить ${generationTopic.toLowerCase()}, ${generationTopic.toLowerCase()} цена, ${generationTopic.toLowerCase()} заказать`;
             break;
           case 'product_desc':
-            results[fieldId] = `Представляем ${generationTopic} — продукт, который сочетает в себе высокое качество и современные технологии. Этот товар идеально подходит для тех, кто ценит надёжность и функциональность.\n\nОсновные характеристики:\n• Высокое качество изготовления\n• Современный дизайн\n• Оптимальное соотношение цены и качества\n• Гарантия производителя\n\nПреимущества:\nНаш ${generationTopic} отличается долговечностью и удобством использования. Продукт прошёл все необходимые проверки качества и полностью соответствует российским стандартам.\n\nПрименение:\nИдеально подходит для повседневного использования. Простота эксплуатации и надёжность делают этот товар отличным выбором для любого покупателя.`;
+            if (context) {
+              results[fieldId] = `Представляем ${generationTopic} — товар на основе реальных данных.\n\n${context.slice(0, 800)}\n\nДанное описание сгенерировано на основе актуальной информации с сайта поставщика.`;
+            } else {
+              results[fieldId] = `Представляем ${generationTopic} — продукт, который сочетает в себе высокое качество и современные технологии. Этот товар идеально подходит для тех, кто ценит надёжность и функциональность.\n\nОсновные характеристики:\n• Высокое качество изготовления\n• Современный дизайн\n• Оптимальное соотношение цены и качества\n• Гарантия производителя\n\nПреимущества:\nНаш ${generationTopic} отличается долговечностью и удобством использования. Продукт прошёл все необходимые проверки качества и полностью соответствует российским стандартам.\n\nПрименение:\nИдеально подходит для повседневного использования. Простота эксплуатации и надёжность делают этот товар отличным выбором для любого покупателя.`;
+            }
             break;
           case 'category_desc':
             results[fieldId] = `В категории ${generationTopic} представлен широкий ассортимент качественных товаров от проверенных производителей. Мы тщательно отбираем каждый продукт, чтобы предложить вам лучшее соотношение цены и качества.\n\nВ нашем каталоге вы найдёте товары на любой вкус и бюджет. Все позиции имеют подробные описания, фотографии и реальные отзывы покупателей. Оформите заказ онлайн с доставкой по всей России!`;
@@ -174,11 +225,16 @@ const Index = () => {
             <GenerationTab
               generationTopic={generationTopic}
               setGenerationTopic={setGenerationTopic}
+              productUrl={productUrl}
+              setProductUrl={setProductUrl}
               fieldTypes={fieldTypes}
               selectedFields={selectedFields}
               toggleField={toggleField}
               generationResults={generationResults}
               handleGenerate={handleGenerate}
+              handleAnalyzeUrl={handleAnalyzeUrl}
+              isAnalyzing={isAnalyzing}
+              extractedData={extractedData}
             />
           )}
 

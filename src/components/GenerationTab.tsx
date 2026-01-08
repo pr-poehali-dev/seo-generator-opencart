@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -6,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
 
@@ -20,21 +22,31 @@ interface FieldType {
 interface GenerationTabProps {
   generationTopic: string;
   setGenerationTopic: (topic: string) => void;
+  productUrl: string;
+  setProductUrl: (url: string) => void;
   fieldTypes: FieldType[];
   selectedFields: Set<string>;
   toggleField: (fieldId: string) => void;
   generationResults: Record<string, string>;
   handleGenerate: () => void;
+  handleAnalyzeUrl: () => void;
+  isAnalyzing: boolean;
+  extractedData: string;
 }
 
 const GenerationTab = ({
   generationTopic,
   setGenerationTopic,
+  productUrl,
+  setProductUrl,
   fieldTypes,
   selectedFields,
   toggleField,
   generationResults,
-  handleGenerate
+  handleGenerate,
+  handleAnalyzeUrl,
+  isAnalyzing,
+  extractedData
 }: GenerationTabProps) => {
   const groupedFields = fieldTypes.reduce((acc, field) => {
     if (!acc[field.category]) {
@@ -49,17 +61,84 @@ const GenerationTab = ({
       <div className="border-b border-border p-6">
         <h2 className="text-2xl font-semibold mb-4">Генерация SEO-контента</h2>
         
+        <Tabs defaultValue="manual" className="mb-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="manual">Ручной ввод</TabsTrigger>
+            <TabsTrigger value="url">Анализ по URL</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="manual" className="space-y-4 mt-4">
+            <div>
+              <Label htmlFor="topic">Тема генерации</Label>
+              <Input
+                id="topic"
+                placeholder="Например: Беспроводные наушники Sony WH-1000XM5"
+                value={generationTopic}
+                onChange={(e) => setGenerationTopic(e.target.value)}
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Введите название товара или категории вручную
+              </p>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="url" className="space-y-4 mt-4">
+            <div>
+              <Label htmlFor="url">URL страницы товара</Label>
+              <div className="flex gap-2 mt-1">
+                <Input
+                  id="url"
+                  placeholder="https://example.com/product/wireless-headphones"
+                  value={productUrl}
+                  onChange={(e) => setProductUrl(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={handleAnalyzeUrl}
+                  disabled={isAnalyzing || !productUrl.trim()}
+                  variant="secondary"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+                      Анализ...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="Search" size={16} className="mr-2" />
+                      Анализировать
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Приложение извлечёт тексты, характеристики и информацию из изображений
+              </p>
+            </div>
+            
+            {extractedData && (
+              <Card className="p-4 bg-accent/5 border-accent/50">
+                <div className="flex items-start gap-2 mb-2">
+                  <Icon name="CheckCircle2" size={16} className="text-accent mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Данные успешно извлечены</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Информация о товаре готова для генерации SEO-контента
+                    </p>
+                  </div>
+                </div>
+                <ScrollArea className="h-32 mt-2">
+                  <pre className="text-xs text-muted-foreground whitespace-pre-wrap">
+                    {extractedData}
+                  </pre>
+                </ScrollArea>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
+        
         <div className="space-y-4">
-          <div>
-            <Label htmlFor="topic">Тема генерации</Label>
-            <Input
-              id="topic"
-              placeholder="Например: Беспроводные наушники Sony WH-1000XM5"
-              value={generationTopic}
-              onChange={(e) => setGenerationTopic(e.target.value)}
-              className="mt-1"
-            />
-          </div>
 
           <div>
             <Label className="mb-2 block">Выберите поля для генерации</Label>
