@@ -38,6 +38,7 @@ interface Source {
 const Index = () => {
   const [activeTab, setActiveTab] = useState('generation');
   const [generationTopic, setGenerationTopic] = useState('');
+  const [brandDescription, setBrandDescription] = useState('');
   const [productUrl, setProductUrl] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [extractedData, setExtractedData] = useState('');
@@ -118,6 +119,7 @@ const Index = () => {
   const handleLoadVersion = (version: Version) => {
     setActiveTab(version.data.activeTab);
     setGenerationTopic(version.data.generationTopic);
+    setBrandDescription(version.data.brandDescription || '');
     setProductUrl(version.data.productUrl);
     setExtractedData(version.data.extractedData);
     setGenerationResults(version.data.generationResults);
@@ -129,6 +131,7 @@ const Index = () => {
     return {
       activeTab,
       generationTopic,
+      brandDescription,
       productUrl,
       extractedData,
       generationResults,
@@ -178,6 +181,7 @@ const Index = () => {
 
   const handleGenerate = () => {
     const topic = generationTopic.trim();
+    const brand = brandDescription.trim();
     const context = extractedData || '';
     
     if (!topic) {
@@ -191,12 +195,11 @@ const Index = () => {
     }
 
     const results: Record<string, string> = {};
+    const brandContext = brand ? `\n\nО бренде: ${brand}` : '';
     
     selectedFields.forEach(fieldId => {
       const field = fieldTypes.find(f => f.id === fieldId);
       if (field) {
-        const baseContent = context ? `На основе: ${context.slice(0, 200)}...\n\n` : '';
-        
         switch(fieldId) {
           case 'h1':
             results[fieldId] = `${generationTopic} — купить в интернет-магазине с доставкой`;
@@ -205,26 +208,32 @@ const Index = () => {
             results[fieldId] = `${generationTopic} | Каталог, цены, отзывы | Интернет-магазин`;
             break;
           case 'description':
-            results[fieldId] = `${generationTopic} в наличии. Широкий выбор, доставка по России, гарантия качества. Сравните цены и характеристики. Закажите онлайн!`;
+            results[fieldId] = brand 
+              ? `${generationTopic} ${brand.split('.')[0]}. В наличии, доставка по России, гарантия качества. Закажите онлайн!`
+              : `${generationTopic} в наличии. Широкий выбор, доставка по России, гарантия качества. Сравните цены и характеристики. Закажите онлайн!`;
             break;
           case 'keywords':
             results[fieldId] = `${generationTopic.toLowerCase()}, купить ${generationTopic.toLowerCase()}, ${generationTopic.toLowerCase()} цена, ${generationTopic.toLowerCase()} заказать`;
             break;
           case 'product_desc':
             if (context) {
-              results[fieldId] = `Представляем ${generationTopic} — товар на основе реальных данных.\n\n${context.slice(0, 800)}\n\nДанное описание сгенерировано на основе актуальной информации с сайта поставщика.`;
+              results[fieldId] = `Представляем ${generationTopic} — товар на основе реальных данных.\n\n${context.slice(0, 800)}${brandContext}\n\nДанное описание сгенерировано на основе актуальной информации с сайта поставщика.`;
             } else {
-              results[fieldId] = `Представляем ${generationTopic} — продукт, который сочетает в себе высокое качество и современные технологии. Этот товар идеально подходит для тех, кто ценит надёжность и функциональность.\n\nОсновные характеристики:\n• Высокое качество изготовления\n• Современный дизайн\n• Оптимальное соотношение цены и качества\n• Гарантия производителя\n\nПреимущества:\nНаш ${generationTopic} отличается долговечностью и удобством использования. Продукт прошёл все необходимые проверки качества и полностью соответствует российским стандартам.\n\nПрименение:\nИдеально подходит для повседневного использования. Простота эксплуатации и надёжность делают этот товар отличным выбором для любого покупателя.`;
+              const brandIntro = brand ? `${brand.split('.')[0]}. ` : '';
+              results[fieldId] = `Представляем ${generationTopic} — продукт, который сочетает в себе высокое качество и современные технологии. ${brandIntro}Этот товар идеально подходит для тех, кто ценит надёжность и функциональность.\n\nОсновные характеристики:\n• Высокое качество изготовления\n• Современный дизайн\n• Оптимальное соотношение цены и качества\n• Гарантия производителя\n\nПреимущества:\nНаш ${generationTopic} отличается долговечностью и удобством использования. Продукт прошёл все необходимые проверки качества и полностью соответствует российским стандартам.${brandContext}\n\nПрименение:\nИдеально подходит для повседневного использования. Простота эксплуатации и надёжность делают этот товар отличным выбором для любого покупателя.`;
             }
             break;
           case 'category_desc':
-            results[fieldId] = `В категории ${generationTopic} представлен широкий ассортимент качественных товаров от проверенных производителей. Мы тщательно отбираем каждый продукт, чтобы предложить вам лучшее соотношение цены и качества.\n\nВ нашем каталоге вы найдёте товары на любой вкус и бюджет. Все позиции имеют подробные описания, фотографии и реальные отзывы покупателей. Оформите заказ онлайн с доставкой по всей России!`;
+            results[fieldId] = `В категории ${generationTopic} представлен широкий ассортимент качественных товаров от проверенных производителей. Мы тщательно отбираем каждый продукт, чтобы предложить вам лучшее соотношение цены и качества.${brandContext}\n\nВ нашем каталоге вы найдёте товары на любой вкус и бюджет. Все позиции имеют подробные описания, фотографии и реальные отзывы покупателей. Оформите заказ онлайн с доставкой по всей России!`;
             break;
           case 'short_desc':
-            results[fieldId] = `${generationTopic} высокого качества. В наличии, быстрая доставка, гарантия. Широкий выбор моделей по выгодным ценам.`;
+            results[fieldId] = brand
+              ? `${generationTopic} ${brand.split('.')[0]}. В наличии, быстрая доставка, гарантия.`
+              : `${generationTopic} высокого качества. В наличии, быстрая доставка, гарантия. Широкий выбор моделей по выгодным ценам.`;
             break;
           case 'blog_post':
-            results[fieldId] = `# Всё, что нужно знать о ${generationTopic}\n\nВыбор правильного товара — важное решение. В этой статье мы расскажем, на что обратить внимание при покупке и как выбрать оптимальный вариант.\n\n## Основные критерии выбора\n\n1. Качество изготовления\n2. Функциональные характеристики\n3. Цена и гарантийные условия\n4. Отзывы других покупателей\n\n## Актуальные тренды 2026 года\n\nСовременный рынок предлагает широкий выбор решений. Покупатели все чаще обращают внимание на экологичность, надёжность и технологичность продуктов.\n\n## Как выбрать ${generationTopic}\n\nПри выборе рекомендуем учитывать ваши конкретные потребности и бюджет. Наши эксперты всегда готовы помочь с подбором оптимального варианта.\n\n## Заключение\n\nПравильный выбор ${generationTopic} обеспечит вам комфорт и удовлетворение от покупки. Заказывайте в нашем магазине — гарантируем качество и выгодные цены!`;
+            const brandSection = brand ? `\n\n## О бренде\n\n${brand}` : '';
+            results[fieldId] = `# Всё, что нужно знать о ${generationTopic}\n\nВыбор правильного товара — важное решение. В этой статье мы расскажем, на что обратить внимание при покупке и как выбрать оптимальный вариант.${brandSection}\n\n## Основные критерии выбора\n\n1. Качество изготовления\n2. Функциональные характеристики\n3. Цена и гарантийные условия\n4. Отзывы других покупателей\n\n## Актуальные тренды 2026 года\n\nСовременный рынок предлагает широкий выбор решений. Покупатели все чаще обращают внимание на экологичность, надёжность и технологичность продуктов.\n\n## Как выбрать ${generationTopic}\n\nПри выборе рекомендуем учитывать ваши конкретные потребности и бюджет. Наши эксперты всегда готовы помочь с подбором оптимального варианта.\n\n## Заключение\n\nПравильный выбор ${generationTopic} обеспечит вам комфорт и удовлетворение от покупки. Заказывайте в нашем магазине — гарантируем качество и выгодные цены!`;
             break;
           case 'news':
             results[fieldId] = `Новое поступление: ${generationTopic} теперь в наличии!\n\nРады сообщить, что в нашем каталоге появились новинки в категории ${generationTopic}. Расширенный ассортимент, актуальные модели и выгодные цены.\n\nУспейте оформить заказ с дополнительной скидкой 10% для первых покупателей. Акция действует до конца месяца. Доставка по всей России!`;
@@ -260,6 +269,8 @@ const Index = () => {
               handleAnalyzeUrl={handleAnalyzeUrl}
               isAnalyzing={isAnalyzing}
               extractedData={extractedData}
+              brandDescription={brandDescription}
+              setBrandDescription={setBrandDescription}
             />
           )}
 

@@ -32,6 +32,8 @@ interface GenerationTabProps {
   handleAnalyzeUrl: () => void;
   isAnalyzing: boolean;
   extractedData: string;
+  brandDescription: string;
+  setBrandDescription: (desc: string) => void;
 }
 
 const GenerationTab = ({
@@ -46,7 +48,9 @@ const GenerationTab = ({
   handleGenerate,
   handleAnalyzeUrl,
   isAnalyzing,
-  extractedData
+  extractedData,
+  brandDescription,
+  setBrandDescription
 }: GenerationTabProps) => {
   const groupedFields = fieldTypes.reduce((acc, field) => {
     if (!acc[field.category]) {
@@ -79,6 +83,20 @@ const GenerationTab = ({
               />
               <p className="text-xs text-muted-foreground mt-1">
                 Введите название товара или категории вручную
+              </p>
+            </div>
+            
+            <div>
+              <Label htmlFor="brand-desc">Описание бренда (опционально)</Label>
+              <Textarea
+                id="brand-desc"
+                placeholder="Например: Sony — японская компания, лидер в производстве аудиотехники премиум-класса"
+                value={brandDescription}
+                onChange={(e) => setBrandDescription(e.target.value)}
+                className="mt-1 min-h-[80px]"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Информация о бренде улучшит качество генерируемого контента
               </p>
             </div>
           </TabsContent>
@@ -114,6 +132,20 @@ const GenerationTab = ({
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Приложение извлечёт тексты, характеристики и информацию из изображений
+              </p>
+            </div>
+            
+            <div>
+              <Label htmlFor="brand-desc-url">Описание бренда (опционально)</Label>
+              <Textarea
+                id="brand-desc-url"
+                placeholder="Например: Sony — японская компания, лидер в производстве аудиотехники премиум-класса"
+                value={brandDescription}
+                onChange={(e) => setBrandDescription(e.target.value)}
+                className="mt-1 min-h-[80px]"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Информация о бренде улучшит качество генерируемого контента
               </p>
             </div>
             
